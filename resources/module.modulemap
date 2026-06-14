@@ -1,0 +1,13 @@
+// Clang module for the Gudhi static-library xcframework, consumed by Swift with
+// C++ interoperability enabled (`-cxx-interoperability-mode`).
+//
+// `gudhi_swift.hpp` is the umbrella facade header; it includes the per-module
+// headers (simplex tree, complexes, distances, mapper, ...). All public
+// signatures use only standard-library / POD types, so no GUDHI/CGAL/Boost
+// internals leak to Swift. `requires cplusplus` keeps the module out of plain
+// C / Objective-C contexts.
+module GudhiCore {
+    header "gudhi_swift.hpp"
+    requires cplusplus
+    export *
+}

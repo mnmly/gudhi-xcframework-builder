@@ -1,0 +1,33 @@
+# Personal config for gudhi-xcframework-builder.
+# Copy to config.sh and edit. config.sh is gitignored.
+
+# Path to a checkout of the GUDHI source repo (gudhi-devel). Provides the
+# header-only library under src/<Module>/include/gudhi/.
+GUDHI_SRC="${GUDHI_SRC:-/Users/mnmly/Development-local/GitHub/cpp/gudhi-devel}"
+
+# Upstream pin. build.sh verifies the GUDHI_SRC checkout sits exactly on this
+# tag and stamps it into the xcframework's version()/provenance. Leave unset to
+# use the committed ./GUDHI_VERSION file (the canonical pin). To upgrade GUDHI:
+# checkout the new tag in GUDHI_SRC and bump ./GUDHI_VERSION.
+# GUDHI_TAG="gudhi-release-3.12.0"
+
+# Where the final Gudhi.xcframework + zip should be written.
+OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)/output}"
+
+# Optional: mirror the xcframework into the Swift package's Frameworks dir so
+# `swift build` / Xcode picks it up immediately. Leave empty to skip.
+SWIFT_PACKAGE_FRAMEWORKS_DIR="${SWIFT_PACKAGE_FRAMEWORKS_DIR:-/Users/mnmly/Development-local/GitHub/swift/SwiftGUDHI/Frameworks}"
+
+# Architecture (only arm64 is supported/tested in this slice).
+ARCHS="${ARCHS:-arm64}"
+
+# macOS deployment target. Reference types imported from C++ need >= 13.3; we
+# keep 14.0 to match the rest of the swift/ packages.
+DEPLOYMENT_TARGET="${DEPLOYMENT_TARGET:-14.0}"
+
+# Boost include dir (header-only Boost.Graph is all GIC.h needs). Defaults to
+# the Homebrew keg. No CGAL/GMP/MPFR/Eigen/TBB are required for the Mapper slice.
+BOOST_INCLUDE="${BOOST_INCLUDE:-$(brew --prefix boost 2>/dev/null)/include}"
+
+# cmake binary (3.27.x is fine; GUDHI needs nothing exotic for a header install).
+CMAKE="${CMAKE:-cmake}"
