@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build.sh — assemble Gudhi.xcframework (macOS arm64, static library) wrapping a
+# build.sh — assemble GudhiCore.xcframework (macOS arm64, static library) wrapping a
 # de-templated C++ facade over GUDHI's Nerve / Graph-Induced-Complex (Mapper).
 #
 # Pipeline (idempotent):
@@ -51,7 +51,10 @@ HEADERS="$STAGE/Headers"
 SHIM_DIR="$ROOT/resources/shim"
 UMBRELLA="gudhi_swift.hpp"          # the single Swift-facing umbrella header
 MERGED="$STAGE/libGudhi.a"
-XCFW="$OUTPUT_DIR/Gudhi.xcframework"
+# Filename must match the Clang module name (`GudhiCore`): WABF's runtime
+# dependency harvest derives the module name from the xcframework's filename,
+# so `Gudhi.xcframework` would expose a `Gudhi` module and break `import GudhiCore`.
+XCFW="$OUTPUT_DIR/GudhiCore.xcframework"
 
 ARCH_FLAGS=()
 for a in $ARCHS; do ARCH_FLAGS+=(-arch "$a"); done
@@ -212,17 +215,17 @@ xcodebuild -create-xcframework \
 
 # ── Step 6: zip + checksum + provenance ──────────────────────────────────────
 echo "[6/7] packaging"
-cp "$PROVENANCE" "$OUTPUT_DIR/Gudhi.xcframework.provenance.txt"
+cp "$PROVENANCE" "$OUTPUT_DIR/GudhiCore.xcframework.provenance.txt"
 ( cd "$OUTPUT_DIR" && \
-  ditto -c -k --keepParent "Gudhi.xcframework" "Gudhi.xcframework.zip" && \
-  shasum -a 256 "Gudhi.xcframework.zip" | tee "Gudhi.xcframework.zip.sha256" )
+  ditto -c -k --keepParent "GudhiCore.xcframework" "GudhiCore.xcframework.zip" && \
+  shasum -a 256 "GudhiCore.xcframework.zip" | tee "GudhiCore.xcframework.zip.sha256" )
 
 # ── Step 7: optional mirror into the Swift package ───────────────────────────
 if [ -n "${SWIFT_PACKAGE_FRAMEWORKS_DIR:-}" ] && [ -d "$(dirname "$SWIFT_PACKAGE_FRAMEWORKS_DIR")" ]; then
   echo "[7/7] mirroring xcframework -> $SWIFT_PACKAGE_FRAMEWORKS_DIR"
   mkdir -p "$SWIFT_PACKAGE_FRAMEWORKS_DIR"
-  rm -rf "$SWIFT_PACKAGE_FRAMEWORKS_DIR/Gudhi.xcframework"
-  ditto "$XCFW" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/Gudhi.xcframework"
+  rm -rf "$SWIFT_PACKAGE_FRAMEWORKS_DIR/Gudhi.xcframework" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/GudhiCore.xcframework"
+  ditto "$XCFW" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/GudhiCore.xcframework"
 else
   echo "[7/7] skipping Swift-package mirror (SWIFT_PACKAGE_FRAMEWORKS_DIR unset or parent missing)"
 fi
