@@ -89,6 +89,27 @@ MapperGraph computeMapperFromDistanceMatrix(const double* distances, int n,
                                             const double* lens, const double* color,
                                             const MapperOptions& opt);
 
+/// Build a Mapper graph from a point cloud using an **N-dimensional lens**.
+///
+/// GUDHI's functional cover is 1-D only, so this builds the N-D hypercube cover
+/// itself: each lens coordinate is split into `opt.resolution` overlapping
+/// intervals (gain overlap); their Cartesian product is the cover, and each
+/// cell is refined into connected components of the Rips neighbourhood graph
+/// (at the same threshold GUDHI would use) — those components are the nodes.
+/// Edges come from GUDHI's nerve over the supplied cover. With `lensDim == 1`
+/// this matches `computeMapper`; `lensDim == 2/3/4` yields a grid/branching atlas.
+///
+/// @param points   row-major matrix, length rows*cols.
+/// @param rows     number of points.
+/// @param cols     dimension of each point.
+/// @param lens     REQUIRED row-major `rows*lensDim` lens (point i's lens =
+///                 lens[i*lensDim .. i*lensDim+lensDim-1]).
+/// @param lensDim  number of lens dimensions (>= 1).
+/// @param color    optional length-`rows` color; null => use `opt.colorCoordinate`.
+MapperGraph computeMapperND(const double* points, int rows, int cols,
+                            const double* lens, int lensDim,
+                            const double* color, const MapperOptions& opt);
+
 /// Library version string.
 std::string version();
 

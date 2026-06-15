@@ -42,7 +42,7 @@ HERA_INCLUDE="${HERA_INCLUDE:-$GUDHI_SRC/ext/hera/include}"
 # Canonical upstream pin. Env/config wins; otherwise the committed GUDHI_VERSION
 # file is the source of truth.
 GUDHI_TAG="${GUDHI_TAG:-$(cat "$ROOT/GUDHI_VERSION" 2>/dev/null | tr -d '[:space:]')}"
-FACADE_VERSION="${FACADE_VERSION:-0.2}"
+FACADE_VERSION="${FACADE_VERSION:-0.3}"
 
 WORK="$ROOT/work"
 STAGE="$WORK/stage"

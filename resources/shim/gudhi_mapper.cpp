@@ -15,6 +15,11 @@
 #include "gudhi_mapper.hpp"
 #include "internal/guard.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <limits>
+#include <map>
 #include <unordered_set>
 #include <vector>
 
@@ -179,6 +184,126 @@ MapperGraph computeMapperFromDistanceMatrix(const double* distances, int n,
   impl.set_graph_from_euclidean_rips(opt.ripsThreshold);
 
   configure_cover(impl, opt, lensVec, /*have_lens=*/true);
+  return apply_mask(impl.extract_graph(), opt.mask);
+ });
+}
+
+MapperGraph computeMapperND(const double* points, int rows, int cols,
+                            const double* lens, int lensDim,
+                            const double* color, const MapperOptions& opt) {
+ return detail::guard([&]() -> MapperGraph {
+  MapperGraph empty;
+  if (!points || rows <= 0 || cols <= 0 || !lens || lensDim <= 0) return empty;
+
+  const std::vector<double> colorVec = to_vector(color, rows);
+
+  Mapper_impl impl;
+  impl.set_verbose(opt.verbose);
+  impl.set_point_cloud_from_range(to_matrix(points, rows, cols));
+
+  if (!colorVec.empty()) {
+    impl.set_color_from_range(colorVec);
+  } else {
+    impl.set_color_from_coordinate(opt.colorCoordinate);
+  }
+
+  // Neighbourhood graph (drives both clustering and the nerve's edges). The
+  // automatic path returns the radius it chose, which we reuse for clustering.
+  double thr;
+  if (opt.ripsThreshold < 0.0) {
+    thr = impl.set_graph_from_automatic_euclidean_rips(opt.automaticRipsN);
+  } else {
+    thr = opt.ripsThreshold;
+    impl.set_graph_from_euclidean_rips(thr);
+  }
+
+  const int res = std::max(1, opt.resolution);
+  const double gain = opt.gain;
+
+  // Per-dimension overlapping intervals (GUDHI's interval scheme, generalised to
+  // each lens axis): first/last cap to the data min/max, interiors overlap by α.
+  std::vector<std::vector<std::pair<double, double>>> intervals(lensDim);
+  for (int d = 0; d < lensDim; ++d) {
+    double mn = (std::numeric_limits<double>::max)();
+    double mx = std::numeric_limits<double>::lowest();
+    for (int i = 0; i < rows; ++i) {
+      const double v = lens[(std::size_t)i * lensDim + d];
+      mn = (std::min)(mn, v);
+      mx = (std::max)(mx, v);
+    }
+    auto& iv = intervals[d];
+    if (res == 1 || mx <= mn) { iv.emplace_back(mn, mx); continue; }
+    const double incr = (mx - mn) / res;
+    const double alpha = (incr * gain) / (2 - 2 * gain);
+    iv.emplace_back(mn, mn + incr + alpha);
+    for (int i = 1; i < res - 1; ++i) iv.emplace_back(mn + i * incr - alpha, mn + (i + 1) * incr + alpha);
+    iv.emplace_back(mn + (res - 1) * incr - alpha, mx);
+  }
+
+  // Mixed-radix multipliers so a per-axis interval tuple maps to one cell id.
+  std::vector<long> radix(lensDim, 1);
+  for (int d = 1; d < lensDim; ++d) radix[d] = radix[d - 1] * static_cast<long>(intervals[d - 1].size());
+
+  // Group points by cell id (a point may fall in several cells via overlap).
+  std::map<long, std::vector<int>> cellPoints;
+  for (int i = 0; i < rows; ++i) {
+    std::vector<long> ids = {0};
+    bool ok = true;
+    for (int d = 0; d < lensDim && ok; ++d) {
+      const double v = lens[(std::size_t)i * lensDim + d];
+      std::vector<int> mem;
+      for (int k = 0; k < static_cast<int>(intervals[d].size()); ++k)
+        if (v >= intervals[d][k].first && v <= intervals[d][k].second) mem.push_back(k);
+      if (mem.empty()) { ok = false; break; }
+      std::vector<long> next;
+      next.reserve(ids.size() * mem.size());
+      for (long base : ids) for (int k : mem) next.push_back(base + radix[d] * k);
+      ids.swap(next);
+    }
+    if (!ok) continue;
+    for (long c : ids) cellPoints[c].push_back(i);
+  }
+
+  // Squared-distance Rips test, reused for per-cell connected components.
+  const double thr2 = thr * thr;
+  auto dist2 = [&](int a, int b) {
+    const double* pa = &points[(std::size_t)a * cols];
+    const double* pb = &points[(std::size_t)b * cols];
+    double s = 0;
+    for (int c = 0; c < cols; ++c) { const double dd = pa[c] - pb[c]; s += dd * dd; }
+    return s;
+  };
+
+  // Refine each cell into connected components → one cover element per component.
+  // Contiguous ids (0..K-1) are required by set_cover_from_range's colour loop.
+  std::vector<std::vector<int>> assignments(rows);
+  int nextId = 0;
+  for (auto& kv : cellPoints) {
+    std::vector<int>& mem = kv.second;
+    const int m = static_cast<int>(mem.size());
+    std::vector<int> parent(m);
+    for (int a = 0; a < m; ++a) parent[a] = a;
+    std::function<int(int)> root = [&](int x) {
+      while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+      return x;
+    };
+    for (int a = 0; a < m; ++a)
+      for (int b = a + 1; b < m; ++b)
+        if (dist2(mem[a], mem[b]) <= thr2) {
+          const int ra = root(a), rb = root(b);
+          if (ra != rb) parent[ra] = rb;
+        }
+    std::map<int, int> rootToId;
+    for (int a = 0; a < m; ++a) {
+      const int r = root(a);
+      auto it = rootToId.find(r);
+      const int gid = (it == rootToId.end()) ? (rootToId[r] = nextId++) : it->second;
+      assignments[mem[a]].push_back(gid);
+    }
+  }
+
+  if (nextId == 0) return empty;
+  impl.set_cover_from_range(assignments);
   return apply_mask(impl.extract_graph(), opt.mask);
  });
 }
