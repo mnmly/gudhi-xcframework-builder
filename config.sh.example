@@ -11,7 +11,7 @@ GUDHI_SRC="${GUDHI_SRC:-/Users/mnmly/Development-local/GitHub/cpp/gudhi-devel}"
 # checkout the new tag in GUDHI_SRC and bump ./GUDHI_VERSION.
 # GUDHI_TAG="gudhi-release-3.12.0"
 
-# Where the final GudhiCore.xcframework + zip should be written.
+# Where the final GudhiCoreFull.xcframework + zip should be written.
 OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)/output}"
 
 # Optional: mirror the xcframework into the Swift package's Frameworks dir so

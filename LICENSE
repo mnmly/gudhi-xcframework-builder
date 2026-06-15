@@ -1,0 +1,42 @@
+SwiftGUDHIFull / GudhiCoreFull — licensing
+==========================================
+
+Original source in this repository (the facade / build scripts) is authored by
+Hiroaki Yamane (mnmly) and offered under the MIT License (below).
+
+HOWEVER, the COMPILED BINARY produced by this branch — `GudhiCoreFull.xcframework`
+— statically links CGAL packages that are licensed GPL-3.0-or-later (the dD
+triangulation used by the Alpha, Tangential and Euclidean Witness modules), plus
+GMP/MPFR (LGPL-3.0). Therefore the binary as a whole, and any application that
+links it, is governed by **GPL-3.0-or-later** (see LICENSE.GPL-3.0). Distributing
+an application linked against GudhiCoreFull.xcframework requires complying with
+the GPL: the application must itself be GPL-3.0-compatible and its complete
+source made available. It cannot be used in closed-source / App Store apps.
+
+For a permissive (MIT/BSD) binary without the CGAL modules, use the `main`
+branch / the `SwiftGUDHI` package and `GudhiCore.xcframework`.
+
+See THIRD_PARTY_LICENSES.md for the full component inventory.
+
+--------------------------------------------------------------------------------
+MIT License (covers the original source files in this repository)
+
+Copyright (c) 2026 Hiroaki Yamane (mnmly)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build.sh — assemble GudhiCore.xcframework (macOS arm64, static library) wrapping a
+# build.sh — assemble GudhiCoreFull.xcframework (macOS arm64, static library) wrapping a
 # de-templated C++ facade over GUDHI's Nerve / Graph-Induced-Complex (Mapper).
 #
 # Pipeline (idempotent):
@@ -42,7 +42,7 @@ HERA_INCLUDE="${HERA_INCLUDE:-$GUDHI_SRC/ext/hera/include}"
 # Canonical upstream pin. Env/config wins; otherwise the committed GUDHI_VERSION
 # file is the source of truth.
 GUDHI_TAG="${GUDHI_TAG:-$(cat "$ROOT/GUDHI_VERSION" 2>/dev/null | tr -d '[:space:]')}"
-FACADE_VERSION="${FACADE_VERSION:-0.3}"
+FACADE_VERSION="${FACADE_VERSION:-0.4}"
 
 WORK="$ROOT/work"
 STAGE="$WORK/stage"
@@ -51,10 +51,10 @@ HEADERS="$STAGE/Headers"
 SHIM_DIR="$ROOT/resources/shim"
 UMBRELLA="gudhi_swift.hpp"          # the single Swift-facing umbrella header
 MERGED="$STAGE/libGudhi.a"
-# Filename must match the Clang module name (`GudhiCore`): WABF's runtime
+# Filename must match the Clang module name (`GudhiCoreFull`): WABF's runtime
 # dependency harvest derives the module name from the xcframework's filename,
-# so `Gudhi.xcframework` would expose a `Gudhi` module and break `import GudhiCore`.
-XCFW="$OUTPUT_DIR/GudhiCore.xcframework"
+# so `Gudhi.xcframework` would expose a `Gudhi` module and break `import GudhiCoreFull`.
+XCFW="$OUTPUT_DIR/GudhiCoreFull.xcframework"
 
 ARCH_FLAGS=()
 for a in $ARCHS; do ARCH_FLAGS+=(-arch "$a"); done
@@ -215,17 +215,17 @@ xcodebuild -create-xcframework \
 
 # ── Step 6: zip + checksum + provenance ──────────────────────────────────────
 echo "[6/7] packaging"
-cp "$PROVENANCE" "$OUTPUT_DIR/GudhiCore.xcframework.provenance.txt"
+cp "$PROVENANCE" "$OUTPUT_DIR/GudhiCoreFull.xcframework.provenance.txt"
 ( cd "$OUTPUT_DIR" && \
-  ditto -c -k --keepParent "GudhiCore.xcframework" "GudhiCore.xcframework.zip" && \
-  shasum -a 256 "GudhiCore.xcframework.zip" | tee "GudhiCore.xcframework.zip.sha256" )
+  ditto -c -k --keepParent "GudhiCoreFull.xcframework" "GudhiCoreFull.xcframework.zip" && \
+  shasum -a 256 "GudhiCoreFull.xcframework.zip" | tee "GudhiCoreFull.xcframework.zip.sha256" )
 
 # ── Step 7: optional mirror into the Swift package ───────────────────────────
 if [ -n "${SWIFT_PACKAGE_FRAMEWORKS_DIR:-}" ] && [ -d "$(dirname "$SWIFT_PACKAGE_FRAMEWORKS_DIR")" ]; then
   echo "[7/7] mirroring xcframework -> $SWIFT_PACKAGE_FRAMEWORKS_DIR"
   mkdir -p "$SWIFT_PACKAGE_FRAMEWORKS_DIR"
-  rm -rf "$SWIFT_PACKAGE_FRAMEWORKS_DIR/Gudhi.xcframework" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/GudhiCore.xcframework"
-  ditto "$XCFW" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/GudhiCore.xcframework"
+  rm -rf "$SWIFT_PACKAGE_FRAMEWORKS_DIR/Gudhi.xcframework" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/GudhiCoreFull.xcframework"
+  ditto "$XCFW" "$SWIFT_PACKAGE_FRAMEWORKS_DIR/GudhiCoreFull.xcframework"
 else
   echo "[7/7] skipping Swift-package mirror (SWIFT_PACKAGE_FRAMEWORKS_DIR unset or parent missing)"
 fi

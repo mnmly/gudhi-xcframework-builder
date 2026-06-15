@@ -6,7 +6,7 @@
 // signatures use only standard-library / POD types, so no GUDHI/CGAL/Boost
 // internals leak to Swift. `requires cplusplus` keeps the module out of plain
 // C / Objective-C contexts.
-module GudhiCore {
+module GudhiCoreFull {
     header "gudhi_swift.hpp"
     requires cplusplus
     export *

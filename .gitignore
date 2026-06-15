@@ -11,3 +11,6 @@ output/*.sha256
 output/*.provenance.txt
 
 .DS_Store
+
+# Swift build artifacts
+.build/

@@ -1,6 +1,6 @@
 # gudhi-xcframework-builder
 
-Builds **`GudhiCore.xcframework`** — a macOS (arm64) static-library xcframework that
+Builds **`GudhiCoreFull.xcframework`** — a macOS (arm64) static-library xcframework that
 wraps a de-templated C++ facade over [GUDHI](https://gudhi.inria.fr) (Topological
 Data Analysis), ready to consume from Swift with **C++ interop**.
 
@@ -9,7 +9,7 @@ It is the build half of a two-repo setup (mirroring `magentart-xcframework-build
 
 | repo | role |
 |------|------|
-| `cpp/gudhi-xcframework-builder` (this) | compiles the facade + GUDHI → `GudhiCore.xcframework` |
+| `cpp/gudhi-xcframework-builder` (this) | compiles the facade + GUDHI → `GudhiCoreFull.xcframework` |
 | `swift/SwiftGUDHI` | Swift package that imports the xcframework via `.interoperabilityMode(.Cxx)` |
 
 ## Why a facade?
@@ -52,7 +52,7 @@ the committed [`GUDHI_VERSION`](./GUDHI_VERSION) file. `build.sh` verifies the
 
 - the facade's `version()` → e.g. `SwiftGUDHI facade 0.1 (GUDHI 3.12.0, tags/gudhi-release-3.12.0)`
 - `Headers/GUDHI_PROVENANCE.txt` (shipped inside the xcframework) and
-  `output/GudhiCore.xcframework.provenance.txt` (tag, version, commit).
+  `output/GudhiCoreFull.xcframework.provenance.txt` (tag, version, commit).
 
 **To upgrade GUDHI:** `git -C <gudhi-devel> checkout <new-tag>`, then bump
 `GUDHI_VERSION`, then `make`.
@@ -71,7 +71,7 @@ cp config.sh.example config.sh   # edit GUDHI_SRC + (optional) mirror dir
 make                             # or: ./build.sh
 ```
 
-Output: `output/GudhiCore.xcframework` (+ `.zip` and `.zip.sha256` for a future
+Output: `output/GudhiCoreFull.xcframework` (+ `.zip` and `.zip.sha256` for a future
 remote `binaryTarget`). If `SWIFT_PACKAGE_FRAMEWORKS_DIR` is set in `config.sh`,
 the xcframework is also mirrored into the Swift package's `Frameworks/` dir.
 
@@ -87,7 +87,7 @@ staged GUDHI headers in `work/`.
    via `libtool -static` (so Swift links nothing extra).
 4. **Assemble** `Headers/` (umbrella + per-module facade headers + `module.modulemap`
    + provenance).
-5. **`xcodebuild -create-xcframework`** → `GudhiCore.xcframework`.
+5. **`xcodebuild -create-xcframework`** → `GudhiCoreFull.xcframework`.
 6. **Zip + checksum**.
 7. **Optionally mirror** into the Swift package.
 
