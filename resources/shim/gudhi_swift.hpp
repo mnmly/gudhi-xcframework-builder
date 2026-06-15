@@ -10,12 +10,10 @@
 
 #include "common.hpp"        // SimplexTree + persistence (the hub)
 #include "rips.hpp"          // Rips / Sparse-Rips complexes
-#include "alpha.hpp"         // Alpha complex (CGAL)
 #include "cubical.hpp"       // Bitmap cubical complex (image persistence)
-#include "witness.hpp"       // Witness complexes (CGAL)
-#include "tangential.hpp"    // Tangential complex (CGAL)
+#include "witness.hpp"       // Witness complex (table-based, combinatorial)
 #include "distances.hpp"     // bottleneck / Wasserstein (Hera)
-#include "subsampling.hpp"   // farthest-point / random / sparsify
+#include "subsampling.hpp"   // farthest-point / random
 #include "gudhi_mapper.hpp"  // Mapper (Nerve of a functional cover)
 
 #include <string>

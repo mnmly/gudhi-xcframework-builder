@@ -27,21 +27,24 @@ stay hidden behind a pimpl.
 |---|---|---|
 | `common.hpp` | **SimplexTree** (insert/query/skeleton/star/cofaces) + **persistent cohomology** (diagram, Betti, intervals, pairs) + **edge collapse** | Boost |
 | `rips.hpp` | **Rips** & **Sparse-Rips** (points or distance matrix) | Boost |
-| `alpha.hpp` | **Alpha complex** (Epick/Epeck precision) | CGAL + GMP/MPFR |
 | `cubical.hpp` | **Bitmap cubical complex** (image persistence) | Boost |
-| `witness.hpp` | **Witness** (Euclidean + nearest-landmark table) | CGAL |
-| `tangential.hpp` | **Tangential complex** | CGAL |
+| `witness.hpp` | **Witness** (table-based, combinatorial) | Boost |
 | `distances.hpp` | **Bottleneck** + **Wasserstein** | Hera (bundled) |
-| `subsampling.hpp` | farthest-point / random / sparsify | CGAL (sparsify) |
-| `gudhi_mapper.hpp` | **Mapper** (nerve of a functional cover) | Boost |
+| `subsampling.hpp` | farthest-point / random | Boost |
+| `gudhi_mapper.hpp` | **Mapper** (nerve of a functional cover, 1-D + N-D lens) | Boost |
 
-## Why no separate "swift-cgal" xcframework?
+This `main` build is **permissive (MIT/BSD)** and links no CGAL/GMP/MPFR/Eigen.
+The CGAL-backed modules (**Alpha, Tangential, Euclidean Witness, sparsify**) are
+GPL-3.0 and live on the **`full-gpl`** branch — build there only if a GPL-3.0
+distribution is acceptable. See [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).
 
-Unlike GDAL (a compiled shared lib worth its own xcframework), **CGAL is
-header-only** — there is no CGAL binary to ship, and Swift never sees it (the
-facade hides it). The only compiled artifacts in the CGAL stack are GMP + MPFR,
-merged straight into `libGudhi.a`. If you later build several CGAL-based Swift
-packages, the natural shared unit is a tiny `gmp-mpfr` xcframework — not "CGAL".
+## License
+
+The source in this repo is **MIT** ([LICENSE](./LICENSE)). The `main`-built
+`GudhiCore.xcframework` links only permissive libraries (GUDHI MIT, Boost
+BSL-1.0, Hera BSD) and is itself permissive — usable in closed-source apps. The
+`full-gpl` branch's build is GPL-3.0-or-later. See
+[THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).
 
 ## Upstream version
 
@@ -60,7 +63,8 @@ the committed [`GUDHI_VERSION`](./GUDHI_VERSION) file. `build.sh` verifies the
 ## Prerequisites
 
 - Xcode + command-line tools (`xcodebuild`, `clang++`, `libtool`).
-- Homebrew **boost cgal eigen gmp mpfr** (`brew install boost cgal eigen gmp mpfr`).
+- Homebrew **boost** (`brew install boost`). (The `full-gpl` branch additionally
+  needs `cgal eigen gmp mpfr`.)
 - A checkout of [`gudhi-devel`](https://github.com/GUDHI/gudhi-devel) with the
   **`ext/hera` submodule initialized** (bundled bottleneck/Wasserstein).
 

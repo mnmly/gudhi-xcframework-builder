@@ -1,4 +1,9 @@
-// witness.hpp — Witness complexes (landmark-based reconstruction).
+// witness.hpp — table-based witness complex (landmark-based reconstruction).
+//
+// Combinatorial only (no CGAL): the caller supplies a precomputed
+// nearest-landmark table. The CGAL-backed Euclidean witness complex (which
+// computes the table itself) is intentionally omitted from this permissive
+// build — compute the table externally (e.g. with a kd-tree) and pass it here.
 
 #ifndef GUDHI_SWIFT_WITNESS_HPP_
 #define GUDHI_SWIFT_WITNESS_HPP_
@@ -7,17 +12,12 @@
 
 namespace gudhi_swift {
 
-/// Euclidean witness complex from a landmark set and a witness (point) set.
-/// @param maxAlphaSquare relaxation parameter (squared).
-/// @param limitDimension max simplex dimension (negative => unlimited).
-SimplexTree euclideanWitnessComplex(const double* landmarks, int numLandmarks, int landmarkDim,
-                                    const double* witnesses, int numWitnesses, int witnessDim,
-                                    double maxAlphaSquare, int limitDimension);
-
 /// Witness complex from a precomputed nearest-landmark table: for each of
 /// `numWitnesses` witnesses, its `k` nearest landmarks given as indices
 /// (`landmarkIndices`, length numWitnesses*k) and squared distances
 /// (`squaredDistances`, same length), nearest-first.
+/// @param maxAlphaSquare relaxation parameter (squared).
+/// @param limitDimension max simplex dimension (negative => unlimited).
 SimplexTree witnessComplexFromTable(const int* landmarkIndices, const double* squaredDistances,
                                     int numWitnesses, int k,
                                     double maxAlphaSquare, int limitDimension);

@@ -16,9 +16,6 @@ DoubleMatrix chooseNFarthestPoints(const double* points, int rows, int cols,
 /// Pick `nbPoints` points uniformly at random.
 DoubleMatrix pickNRandomPoints(const double* points, int rows, int cols, int nbPoints);
 
-/// Keep points no two of which are closer than sqrt(`minSquaredDist`) (CGAL).
-DoubleMatrix sparsifyPointSet(const double* points, int rows, int cols, double minSquaredDist);
-
 }  // namespace gudhi_swift
 
 #endif  // GUDHI_SWIFT_SUBSAMPLING_HPP_

@@ -30,19 +30,16 @@ OUTPUT_DIR="${OUTPUT_DIR:-$ROOT/output}"
 DEPLOYMENT_TARGET="${DEPLOYMENT_TARGET:-14.0}"
 ARCHS="${ARCHS:-arm64}"
 BOOST_INCLUDE="${BOOST_INCLUDE:-$(brew --prefix boost)/include}"
-# CGAL-backed modules (Alpha/Delaunay, Tangential, Witness, Subsampling) need
-# CGAL + Eigen headers and the compiled GMP/MPFR archives (for exact kernels).
-# CGAL/Eigen/Boost/Hera are header-only and compile into the facade objects;
-# only GMP/MPFR are binaries, and they are merged into libGudhi.a.
-CGAL_INCLUDE="${CGAL_INCLUDE:-$(brew --prefix cgal)/include}"
-EIGEN_INCLUDE="${EIGEN_INCLUDE:-$(brew --prefix eigen)/include/eigen3}"
-GMP_PREFIX="${GMP_PREFIX:-$(brew --prefix gmp)}"
-MPFR_PREFIX="${MPFR_PREFIX:-$(brew --prefix mpfr)}"
+# Permissive build: NO CGAL / GMP / MPFR / Eigen. The CGAL-backed modules
+# (Alpha, Tangential, Euclidean Witness, sparsify) are excluded to keep the
+# binary MIT/BSD-licensed — see THIRD_PARTY_LICENSES.md. The full CGAL/GPL build
+# lives on the `full-gpl` branch. Hera (bottleneck/Wasserstein) is bundled
+# header-only in the GUDHI tree.
 HERA_INCLUDE="${HERA_INCLUDE:-$GUDHI_SRC/ext/hera/include}"
 # Canonical upstream pin. Env/config wins; otherwise the committed GUDHI_VERSION
 # file is the source of truth.
 GUDHI_TAG="${GUDHI_TAG:-$(cat "$ROOT/GUDHI_VERSION" 2>/dev/null | tr -d '[:space:]')}"
-FACADE_VERSION="${FACADE_VERSION:-0.3}"
+FACADE_VERSION="${FACADE_VERSION:-0.4}"
 
 WORK="$ROOT/work"
 STAGE="$WORK/stage"
@@ -59,29 +56,16 @@ XCFW="$OUTPUT_DIR/GudhiCore.xcframework"
 ARCH_FLAGS=()
 for a in $ARCHS; do ARCH_FLAGS+=(-arch "$a"); done
 
-# Header include set for compiling the facade TUs. CGAL/Eigen/Boost/Hera are
-# header-only; GMP/MPFR contribute headers here and archives at the merge step.
+# Header include set for compiling the facade TUs. All header-only: GUDHI +
+# Boost + Hera. No CGAL/Eigen/GMP/MPFR in the permissive build.
 INCLUDES=(
   -I "$GUDHI_INC"
   -I "$BOOST_INCLUDE"
-  -I "$CGAL_INCLUDE"
-  -I "$EIGEN_INCLUDE"
-  -I "$GMP_PREFIX/include"
-  -I "$MPFR_PREFIX/include"
   -I "$HERA_INCLUDE"
-)
-# Compiled archives merged into libGudhi.a so Swift links nothing extra.
-DEP_ARCHIVES=(
-  "$GMP_PREFIX/lib/libgmp.a"
-  "$GMP_PREFIX/lib/libgmpxx.a"
-  "$MPFR_PREFIX/lib/libmpfr.a"
 )
 
 echo "[i] GUDHI_SRC        = $GUDHI_SRC"
 echo "[i] BOOST_INCLUDE    = $BOOST_INCLUDE"
-echo "[i] CGAL_INCLUDE     = $CGAL_INCLUDE"
-echo "[i] EIGEN_INCLUDE    = $EIGEN_INCLUDE"
-echo "[i] GMP/MPFR         = $GMP_PREFIX | $MPFR_PREFIX"
 echo "[i] HERA_INCLUDE     = $HERA_INCLUDE"
 echo "[i] ARCHS            = $ARCHS"
 echo "[i] DEPLOYMENT_TARGET= $DEPLOYMENT_TARGET"
@@ -90,12 +74,7 @@ echo "[i] OUTPUT_DIR       = $OUTPUT_DIR"
 [ -d "$GUDHI_SRC/src/Nerve_GIC/include/gudhi" ] || {
   echo "[!] $GUDHI_SRC does not look like a gudhi-devel checkout (missing src/Nerve_GIC)"; exit 1; }
 [ -d "$BOOST_INCLUDE/boost" ] || { echo "[!] Boost headers not found at $BOOST_INCLUDE"; exit 1; }
-[ -f "$CGAL_INCLUDE/CGAL/version.h" ] || { echo "[!] CGAL headers not found at $CGAL_INCLUDE"; exit 1; }
-[ -f "$EIGEN_INCLUDE/Eigen/Core" ] || { echo "[!] Eigen headers not found at $EIGEN_INCLUDE"; exit 1; }
 [ -f "$HERA_INCLUDE/hera/bottleneck.h" ] || { echo "[!] Hera headers not found at $HERA_INCLUDE (init the ext/hera submodule)"; exit 1; }
-for a in "${DEP_ARCHIVES[@]}"; do
-  [ -f "$a" ] || { echo "[!] required static archive missing: $a"; exit 1; }
-done
 
 # ── Step 0: resolve + verify upstream GUDHI version ──────────────────────────
 # Actual state of the checkout (works whether or not it is a git repo).
@@ -152,10 +131,10 @@ VERSION_DEFS=(
   -DGUDHI_SWIFT_GUDHI_VERSION="\"$GUDHI_VERSION\""
   -DGUDHI_SWIFT_GUDHI_DESCRIBE="\"$GUDHI_DESCRIBE\""
 )
-# Release build: -DNDEBUG disables CGAL/GUDHI/Hera internal asserts (correctness
-# is unaffected; it's a large perf win and avoids over-strict debug checks, e.g.
-# Hera's L-inf assert). -frounding-math gives CGAL exact kernels IEEE rounding.
-CXXFLAGS=(-std=c++17 -O2 -DNDEBUG -fvisibility=default -frounding-math
+# Release build: -DNDEBUG disables GUDHI/Hera internal asserts (correctness is
+# unaffected; a perf win and avoids over-strict debug checks, e.g. Hera's L-inf
+# assert).
+CXXFLAGS=(-std=c++17 -O2 -DNDEBUG -fvisibility=default
           -mmacosx-version-min="$DEPLOYMENT_TARGET" "${ARCH_FLAGS[@]}")
 
 mkdir -p "$STAGE/obj"
@@ -178,10 +157,10 @@ for tu in "${TUS[@]}"; do
   OBJECTS+=("$obj")
 done
 
-# ── Step 3: merge facade objects + GMP/MPFR archives into one static library ──
+# ── Step 3: merge facade objects into one static library ─────────────────────
 echo "[3/7] merging static library -> $MERGED"
 rm -f "$MERGED"
-libtool -static -o "$MERGED" "${OBJECTS[@]}" "${DEP_ARCHIVES[@]}"
+libtool -static -o "$MERGED" "${OBJECTS[@]}"
 
 # ── Step 4: assemble public Headers/ + provenance ────────────────────────────
 echo "[4/7] assembling Headers/"

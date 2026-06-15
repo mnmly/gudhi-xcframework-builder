@@ -1,4 +1,4 @@
-// subsampling.cpp — GUDHI point-cloud subsampling.
+// subsampling.cpp — GUDHI point-cloud subsampling (no CGAL).
 
 #include "subsampling.hpp"
 #include "internal/guard.hpp"
@@ -7,10 +7,8 @@
 #include <iterator>
 #include <vector>
 
-#include <CGAL/Epick_d.h>
 #include <gudhi/choose_n_farthest_points.h>
 #include <gudhi/pick_n_random_points.h>
-#include <gudhi/sparsify_point_set.h>
 #include <gudhi/distance_functions.h>
 
 namespace gudhi_swift {
@@ -50,26 +48,6 @@ DoubleMatrix pickNRandomPoints(const double* points, int rows, int cols, int nbP
     if (!points || rows <= 0 || cols <= 0) return landmarks;
     const auto pts = to_matrix(points, rows, cols);
     Gudhi::subsampling::pick_n_random_points(pts, nbPoints, std::back_inserter(landmarks));
-    return landmarks;
-  });
-}
-
-DoubleMatrix sparsifyPointSet(const double* points, int rows, int cols, double minSquaredDist) {
-  return detail::guard([&]() -> DoubleMatrix {
-    DoubleMatrix landmarks;
-    if (!points || rows <= 0 || cols <= 0) return landmarks;
-    using Kernel = CGAL::Epick_d<CGAL::Dynamic_dimension_tag>;
-    using Point_d = Kernel::Point_d;
-
-    std::vector<Point_d> input, output;
-    input.reserve(rows);
-    for (int i = 0; i < rows; ++i) {
-      const double* row = points + i * cols;
-      input.emplace_back(cols, row, row + cols);
-    }
-    Kernel k;
-    Gudhi::subsampling::sparsify_point_set(k, input, minSquaredDist, std::back_inserter(output));
-    for (const auto& p : output) landmarks.emplace_back(p.cartesian_begin(), p.cartesian_end());
     return landmarks;
   });
 }
